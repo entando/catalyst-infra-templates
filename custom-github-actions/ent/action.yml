@@ -8,5 +8,5 @@ inputs:
 runs:
   using: 'docker'
   image: docker://registry.hub.docker.com/entando/ent:7.1.3_ocp-4.8_k8s_1.21
-  args:
-    - ${{ inputs.ent-command }}
+  steps:
+    - run: /bin/bash -c "${{ inputs.ent-command }}"
