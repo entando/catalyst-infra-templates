@@ -1,5 +1,12 @@
 name: ent
 description: Entando ent cli tool
+inputs:
+  docker-org: # id of input
+    description: 'Docker organization'
+    required: true
+    default: 'entando'
 runs:
-  using: docker
+  using: 'docker'
   image: docker://registry.hub.docker.com/entando/ent:7.1.3_ocp-4.8_k8s_1.21
+  args:
+    - ${{ inputs.docker-org }}
