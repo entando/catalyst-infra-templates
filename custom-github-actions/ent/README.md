@@ -1,6 +1,6 @@
 # Ent docker action
 
-This action uses the `ent` build tool to: build and generate the manifests for and entando bundle project.
+This action uses the `ent` build tool to: build and generate the manifests for an entando bundle project.
 
 ## Inputs
 
