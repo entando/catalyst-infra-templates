@@ -30,7 +30,7 @@ to the microservices.
 ## Example usage
 
 ```yaml
-uses: entando/catalyst-infra-templates/custom-githun-actions/ent@test-ent
+uses: entando/catalyst-infra-templates/custom-github-actions/ent@test-ent
 with:
   ent-command: ent bundle pack --org=entando --stdout
 ```
