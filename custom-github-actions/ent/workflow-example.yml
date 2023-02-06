@@ -25,7 +25,7 @@ jobs:
       id: ent
       uses: entando/catalyst-infra-templates/custom-github-actions/ent@test-ent
       with:
-        ent-command: ent bundle pack --org=entando --stdout
+        ent-command: ent bundle pack --org=$ORG --stdout
 
     - name: Bundle name
       run: echo "Bundle Name-> ${{ steps.ent.outputs.bundle-name }}"
