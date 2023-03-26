@@ -5,7 +5,8 @@ on:
     types:
       - closed
     branches:
-      - 'release/**'
+      - release
+
 
 jobs:
   if_merged:

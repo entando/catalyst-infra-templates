@@ -6,4 +6,3 @@ Repository containing company wide templates related to the release of the Entan
 Here we are using this git-flow:
 
 ![Catalyst/Infra git-flow](images/catalyst-git-flow.png)
-
