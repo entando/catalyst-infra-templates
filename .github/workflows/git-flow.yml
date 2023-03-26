@@ -1,12 +1,15 @@
 name: Merge any release branch to main
 run-name: ${{ github.actor }} has merged pr in the release branch
 on:
- push:
-   branches:
-     - 'release/**'
+  pull_request:
+    types:
+      - closed
+    branches:
+      - 'release/**'
 
 jobs:
-  merge-branch:
+  if_merged:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
