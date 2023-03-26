@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@master
 
       - name: Merge release -> main
-        uses: devmax/merge-branch@master
+        uses: devmasx/merge-branch@master
         with:
           type: now
           target_branch: main
