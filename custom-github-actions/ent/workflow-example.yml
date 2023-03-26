@@ -1,0 +1,68 @@
+name: Build with ent-cli
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  REGISTRY: registry.hub.docker.com
+  ORG: your_org
+
+jobs:
+
+  build-generate-manifests-and-docker-images:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - uses: actions/checkout@v3
+      name: Fetch repository
+
+    - name: Build bundle
+      id: ent
+      uses: entando/catalyst-infra-templates/custom-github-actions/ent@test-ent
+      with:
+        ent-command: ent bundle pack --org=$ORG --stdout
+
+    - name: Bundle name
+      run: echo "Bundle Name-> ${{ steps.ent.outputs.bundle-name }}"
+
+    - name: Bundle version
+      run: echo "Bundle Version-> ${{ steps.ent.outputs.bundle-version }}"
+
+    - name: List of Microservices
+      run: echo "Microservices's list-> ${{ steps.ent.outputs.microservices-list }}"
+
+    - name: Number of Microservices
+      run: echo "Number of Microservices-> ${{ steps.ent.outputs.microservices-number }}"
+
+    - name: Docker login
+      run: echo ${{ secrets.DOCKER_SA_TOKEN }} | docker login --username ${{ secrets.DOCKER_SA_LOGIN }} --password-stdin https://$REGISTRY
+
+    - name: Build docker bundle image
+      run: docker build -t $REGISTRY/$ORG/${{ steps.ent.outputs.bundle-name }}:${{ steps.ent.outputs.bundle-version }} --file ./.entando/output/Dockerfile .
+
+    - name: Push bundle image
+      run: docker push $REGISTRY/$ORG/${{ steps.ent.outputs.bundle-name }}:${{ steps.ent.outputs.bundle-version }}
+
+    - name: Build and push ms docker image(s)
+      run: |
+        if [ ${{ steps.ent.outputs.microservices-number }} -gt 1 ]; then
+          for ms in ${{ steps.ent.outputs.microservices-list }} ; do
+            docker build -t $REGISTRY/$ORG/$ms:`cat ms-"$ms"-version` --file ./microservices/"$ms"/Dockerfile ./microservices/"$ms"/
+            docker push $REGISTRY/$ORG/$ms:`cat ms-"$ms"-version` ;
+            done
+        else
+          docker build -t $REGISTRY/$ORG/${{ steps.ent.outputs.microservices-list }}:`cat microserviceVersion` --file ./microservices/${{ steps.ent.outputs.microservices-list }}/Dockerfile ./microservices/${{ steps.ent.outputs.microservices-list }}/
+          docker push $REGISTRY/$ORG/${{ steps.ent.outputs.microservices-list }}:`cat microserviceVersion`
+        fi
+
+    - name: Docker logout
+      run: docker logout
+
+    - name: Remove docker config.json file
+      run: rm -f /home/runner/.docker/config.json
+

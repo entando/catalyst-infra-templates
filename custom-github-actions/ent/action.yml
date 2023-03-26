@@ -3,3 +3,30 @@ description: Entando ent cli tool
 runs:
   using: docker
   image: registry.hub.docker.com/entando/ent:7.1.3_ocp-4.8_k8s_1.21
+description: Entando ent build tool
+inputs:
+  ent-command: # id of input
+    description: 'ent command to run'
+    required: true
+    #default: 'ent bundle pack --org=entando --stdout'
+    default: ""
+
+outputs:
+  bundle-name: # id of the output
+    description: 'The name of the bundle retrieved from entando.json'
+
+  bundle-version: # id of the output
+    description: 'The version of the bundle to build'
+
+  microservices-list: # id of the output
+    description: 'The list of microservices to build'
+
+  microservices-number: # id of the output
+    description: 'The number of microservices to build'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.ent-command }}
+
