@@ -1,0 +1,129 @@
+name: Snyk vulnerability scan report
+
+on:
+  schedule:
+    - cron: "0 0/8 * * *"
+
+env:
+  APP_ENGINE_REPO: entando/app-engine
+  APP_ENGINE_BRANCH: develop
+  CATALYST_INFRA_TEMPLATES_REPO: entando/catalyst-infra-templates
+  SNYK_SCAN_MATRIX_CONFIG_URL: global-config/snyk-scan-matrix.json
+  SNYK_SCAN_BUILD_POM_SCRIPT_URL: scripts/snyk-scan-build-pom.sh
+
+jobs:
+  output-setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      build_pom_script: ${{ steps.set-build-pom-script.outputs.build_pom_script }}
+      pom_template: ${{ steps.set-pom-template.outputs.pom_template }}
+    steps:
+    
+    - name: Checkout catalyst-infra-templates
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ env.CATALYST_INFRA_TEMPLATES_REPO }}
+        token: ${{ secrets.ENTANDO_BOT_TOKEN }}
+        
+    - name: Load snyk-scan-matrix.json
+      id: set-matrix
+      run: |
+        echo "matrix=$(jq -c . < $SNYK_SCAN_MATRIX_CONFIG_URL)" >> $GITHUB_OUTPUT
+ 
+    - name: Upload snyk-scan-build-pom.sh
+      uses: actions/upload-artifact@v3
+      with:
+        name: snyk-scan-build-pom.sh
+        path: ${{ env.SNYK_SCAN_BUILD_POM_SCRIPT_URL }}
+        
+  scan-matrix:
+    needs: output-setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{fromJson(needs.output-setup.outputs.matrix)}}
+      fail-fast: true
+      max-parallel: 10
+    steps:
+    - name: Checkout project
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ matrix.repo }}
+        ref: ${{ matrix.branch }}
+    - name: Download snyk-scan-build-pom.sh
+      uses: actions/download-artifact@v3
+      with:
+        name: snyk-scan-build-pom.sh
+    - name: Scan vulnerabilities with snyk
+      run: |
+        rm -rfv ./scan-prj
+        mkdir scan-prj
+        cd scan-prj
+        mv ../snyk-scan-build-pom.sh .
+        bash snyk-scan-build-pom.sh
+        cat pom.xml
+        npm install snyk -g
+        snyk auth ${{ secrets.SNYK_TOKEN }}
+        snyk test >> snyk-results.txt || true
+        BRANCH=$(echo ${{ matrix.branch }} | sed -r 's;/+;_;g')
+        REPO_NAME=$(echo "${{ matrix.repo }}" | awk -F '/' '{print $2}')
+        REPORT_FILE_NAME=$BRANCH-$REPO_NAME.csv
+        echo "Vulnerable Library, Vulnerability Type, Severity, Current Version, Fix Version, Fix Type (Update/Explicity/No Fix), Details" > $REPORT_FILE_NAME
+        VULNERABILITY_COUNT=0
+        while read LINE
+        do
+          if [[ $LINE == Upgrade* ]]
+          then
+            VULNERABLE_LIB_VERSION_FIX=$(echo "${LINE}" | awk -F '@' '{print $3}' | awk -F ' ' '{print $1}')
+            VULNERABLE_LIB_VERSION_FIX=$(echo $VULNERABLE_LIB_VERSION_FIX | sed -r 's|,|;|g')
+            FIX_TYPE="Update"
+            ISSUES_WITH_NO_DIRECT_UPGRADE=false
+          elif [[ $LINE == ✗* ]]
+          then
+            VULNERABILITY_TYPE=$(echo "${LINE}" | awk -F '✗ ' '{print $2}' | awk -F ' \\[' '{print $1}')
+            VULNERABILITY_SEVERITY=$(echo "${LINE}" | awk -F '[' '{print $2}' | awk -F ' ' '{print $1}')
+            VULNERABILITY_SNYK_LINK=$(echo "${LINE}" | awk -F '[' '{print $3}' | awk -F ']' '{print $1}')
+          elif [[ $LINE == "Issues with no direct upgrade"* ]]
+          then
+            ISSUES_WITH_NO_DIRECT_UPGRADE=true
+            FIX_TYPE="No fix"
+            VULNERABLE_LIB_VERSION_FIX=
+          elif [[ $LINE == "introduced by"* ]]
+          then
+            VULNERABLE_LIB=$(echo "${LINE}" | awk -F 'introduced by ' '{print $2}' | awk -F '@' '{print $1}')
+            VULNERABLE_LIB_VERSION=$(echo "${LINE}" | awk -F '@' '{print $2}' | awk '{print $1}')
+            if [[ $ISSUES_WITH_NO_DIRECT_UPGRADE = false ]]
+            then
+              echo "${VULNERABLE_LIB},${VULNERABILITY_TYPE},${VULNERABILITY_SEVERITY},${VULNERABLE_LIB_VERSION},${VULNERABLE_LIB_VERSION_FIX},${FIX_TYPE},${VULNERABILITY_SNYK_LINK}" >> $REPORT_FILE_NAME
+              VULNERABILITY_COUNT=$((VULNERABILITY_COUNT+1))
+            fi
+          elif [[ $LINE == "This issue was fixed in versions"* ]]
+          then
+            VULNERABLE_LIB_VERSION_FIX=$(echo "${LINE}" | awk -F 'This issue was fixed in versions: ' '{print $2}')
+            VULNERABLE_LIB_VERSION_FIX=$(echo $VULNERABLE_LIB_VERSION_FIX | sed -r 's|,|;|g')
+            FIX_TYPE="Explicity"
+            echo "${VULNERABLE_LIB},${VULNERABILITY_TYPE},${VULNERABILITY_SEVERITY},${VULNERABLE_LIB_VERSION},${VULNERABLE_LIB_VERSION_FIX},${FIX_TYPE},${VULNERABILITY_SNYK_LINK}" >> $REPORT_FILE_NAME
+            VULNERABILITY_COUNT=$((VULNERABILITY_COUNT+1))
+          elif [[ $LINE == "No upgrade or patch available"* ]]
+          then
+            FIX_TYPE="No fix"
+            VULNERABLE_LIB_VERSION_FIX=
+            echo "${VULNERABLE_LIB},${VULNERABILITY_TYPE},${VULNERABILITY_SEVERITY},${VULNERABLE_LIB_VERSION},${VULNERABLE_LIB_VERSION_FIX},${FIX_TYPE},${VULNERABILITY_SNYK_LINK}" >> $REPORT_FILE_NAME
+            VULNERABILITY_COUNT=$((VULNERABILITY_COUNT+1))
+          fi
+        done < snyk-results.txt
+        curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"$REPO_NAME in branch ${{ matrix.branch }} has $VULNERABILITY_COUNT vulnerabilities\"}" ${{ secrets.SLACK_SV_WEBHOOK }}
+    - name: Upload Snyk reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: snyk-report
+        path: scan-prj/*.csv
+        
+  post-artifact-link:
+    needs: scan-matrix
+    runs-on: ubuntu-latest
+    steps:
+    - name: Post run page into Slack
+      run: |
+        curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"Here is the link for this report: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" ${{ secrets.SLACK_SV_WEBHOOK }}
+      
