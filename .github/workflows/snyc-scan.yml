@@ -1,7 +1,8 @@
-name: Snyk vulnerability reports manual
+name: Snyk vulnerability scan report
 
 on:
-  workflow_dispatch:
+  schedule:
+    - cron: "0 0/8 * * *"
 
 env:
   APP_ENGINE_REPO: entando/app-engine
@@ -18,14 +19,13 @@ jobs:
       build_pom_script: ${{ steps.set-build-pom-script.outputs.build_pom_script }}
       pom_template: ${{ steps.set-pom-template.outputs.pom_template }}
     steps:
-    # Checkout the catalyst-infra-templates repository
+    
     - name: Checkout catalyst-infra-templates
       uses: actions/checkout@v3
       with:
         repository: ${{ env.CATALYST_INFRA_TEMPLATES_REPO }}
         token: ${{ secrets.ENTANDO_BOT_TOKEN }}
         
-    # Load snyk-scan-matrix.json file
     - name: Load snyk-scan-matrix.json
       id: set-matrix
       run: |
