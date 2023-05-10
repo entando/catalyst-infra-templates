@@ -16,6 +16,7 @@ on:
       - develop
       - release/*
       - ENG-*
+      - ENGPM-*
       - IT-*
 
 jobs:
