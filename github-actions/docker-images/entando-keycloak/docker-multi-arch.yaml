@@ -1,11 +1,13 @@
-name: Build Multi-arch Docker images
+name: "Entando CI Docker images"
 
 on:
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - synchronized
-      - reopened
+      - edited
+      - labeled
+      - unlabeled
     branches:
       - develop
       - release/*
