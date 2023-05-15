@@ -7,7 +7,7 @@ on:
 env:
   APP_ENGINE_REPO: entando/app-engine
   APP_ENGINE_BRANCH: develop
-  CATALYST_INFRA_TEMPLATES_REPO: BrenoQVDS/catalyst-infra-templates
+  CATALYST_INFRA_TEMPLATES_REPO: entando/catalyst-infra-templates
   SNYK_SCAN_MATRIX_CONFIG_URL: global-config/snyk-scan-matrix.json
   SNYK_SCAN_BUILD_POM_SCRIPT_URL: scripts/snyk-scan-build-pom.sh
 
@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix: ${{fromJson(needs.output-setup.outputs.matrix)}}
-      fail-fast: false
+      fail-fast: true
       max-parallel: 10
     steps:
     - name: Checkout project
