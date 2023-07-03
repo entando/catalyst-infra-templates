@@ -90,7 +90,7 @@ jobs:
             ISSUES_WITH_NO_DIRECT_UPGRADE=false
           elif [[ $LINE == ✗* ]]
           then
-            VULNERABILITY_TYPE=$(echo "${LINE}" | awk -F '✗ ' '{print $2}' | awk -F ' \\[' '{print $1}')
+            VULNERABILITY_TYPE=$(echo "${LINE}" | awk -F '✗ ' '{print $2}' | awk -F ' \\[' '{print $1}' | sed 's/ (new)//')
             VULNERABILITY_SEVERITY=$(echo "${LINE}" | awk -F '[' '{print $2}' | awk -F ' ' '{print $1}')
             VULNERABILITY_SEVERITY_ENUM=$(echo $VULNERABILITY_SEVERITY | tr '[:lower:]' '[:upper:]')
             VULNERABILITY_SNYK_LINK=$(echo "${LINE}" | awk -F '[' '{print $3}' | awk -F ']' '{print $1}')
