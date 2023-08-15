@@ -8,5 +8,11 @@
     "entando/app-engine",
     "entando/entando-spring-boot-parent",
     "entando-k8s/entando-quarkus-parent"
+  ],
+  "include": [
+    {
+      "branch": "release/6.5",
+      "repo": "entando/entando-core-parent"
+    }
   ]
 }
