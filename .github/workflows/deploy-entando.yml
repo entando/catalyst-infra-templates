@@ -1,0 +1,17 @@
+name: Deploy Entando
+
+on:
+  workflow_dispatch:
+    inputs:
+      entandoVersion:
+        description: "Entando version"
+        required: true
+
+jobs:
+  echo:
+    runs-on: ubuntu-latest
+    steps:
+    
+    - name: echo test
+      run: |
+        echo "Testing 1"

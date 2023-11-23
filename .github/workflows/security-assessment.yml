@@ -1,0 +1,14 @@
+name: Security Assessment
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  echo:
+    runs-on: ubuntu-latest
+    steps:
+    
+    - name: echo test
+      run: |
+        echo "Testing 1"
