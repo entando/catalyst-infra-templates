@@ -4,11 +4,80 @@ on:
   schedule:
     - cron: "0 0 * * *"
 
+env:
+  CATALYST_INFRA_TEMPLATES_REPO: entando/catalyst-infra-templates
+  SECURITY_ASSESSMENT_MATRIX_CONFIG_URL: global-config/security-assessment-matrix.json
+
 jobs:
-  echo:
+  setup:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
     
-    - name: echo test
+    - name: Checkout catalyst-infra-templates
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ env.CATALYST_INFRA_TEMPLATES_REPO }}
+        token: ${{ secrets.ENTANDO_BOT_TOKEN }}
+        
+    - name: Load security-assessment-matrix.json
+      id: set-matrix
       run: |
-        echo "Testing 1"
+        echo "matrix=$(jq -c . < $SECURITY_ASSESSMENT_MATRIX_CONFIG_URL)" >> $GITHUB_OUTPUT
+ 
+  scan-entando-instance-matrix:
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix: ${{fromJson(needs.setup.outputs.matrix)}}
+      fail-fast: true
+      max-parallel: 10
+    steps:
+
+    - name: Install Entando
+      run: |
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "GitHub-Action-Event: start_entando" \
+          -H "X-Api-Key: ${{ secrets.SECURITY_ASSESSMENT_API_KEY }}" \
+          -d '{
+               "entandoAppName":" ${{ matrix.targetNamespace }}",
+               "ingressHostName":"${{ matrix.targetNamespace }}.k8s-entando.org",
+               "targetNamespace":"${{ matrix.targetNamespace }}",
+               "entandoVersion":"${{ matrix.entandoVersion }}"
+             }' \
+          ${{ secrets.SECURITY_ASSESSMENT_WEBHOOK_URL }}
+
+    - name: Waiting for installation
+      run: |
+        while true; do
+          url="http://${{ matrix.targetNamespace }}.k8s-entando.org/entando-de-app/api/health"
+          response=$(curl -s -o /dev/null -w "%{http_code}" $url)
+          echo "Checking if Entando is installed. Current status code: ${response}."
+          if [ "$response" == "200" ]; then
+            echo "Entando is installed. Exiting."
+            break
+          else
+            echo "Entando is still being installing. This should take around 10 minutes. Waiting 1 minute."
+            sleep 60
+          fi
+        done
+
+    - name: ZAP Scan
+      uses: zaproxy/action-full-scan@v0.8.0
+      with:
+        target: 'http://${{ matrix.targetNamespace }}.k8s-entando.org/entando-de-app/'
+        artifact_name: "${{ matrix.targetNamespace }}-scan"
+
+    - name: Shutdown Entando
+      run: |
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "GitHub-Action-Event: shutdown_entando" \
+          -H "X-Api-Key: ${{ secrets.SECURITY_ASSESSMENT_API_KEY }}" \
+          -d '{
+               "targetNamespace":"${{ matrix.targetNamespace }}"
+             }' \
+          ${{ secrets.SECURITY_ASSESSMENT_WEBHOOK_URL }}
