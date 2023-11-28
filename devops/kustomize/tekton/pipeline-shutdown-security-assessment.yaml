@@ -1,0 +1,17 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: pipeline-shutdown-security-assessment
+spec:
+  params:
+    - name: targetNamespace
+      type: string     
+  workspaces:
+    - name: shared-workspace
+  tasks:
+    - name: shutdown-entando
+      params:
+        - name: targetNamespace
+          value: $(params.targetNamespace)
+      taskRef:
+        name: task-delete-namespace

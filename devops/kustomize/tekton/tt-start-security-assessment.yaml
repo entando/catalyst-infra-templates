@@ -1,0 +1,36 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: tt-start-security-assessment
+spec:
+  params:
+    - name: entandoAppName
+    - name: ingressHostName
+    - name: targetNamespace
+    - name: entandoVersion
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1beta1
+    kind: PipelineRun
+    metadata:
+      generateName: start-security-assessment-run-
+    spec:
+      pipelineRef:
+        name: pipeline-start-security-assessment
+      params:
+        - name: entandoAppName
+          value: $(tt.params.entandoAppName)
+        - name: ingressHostName
+          value: $(tt.params.ingressHostName)
+        - name: targetNamespace
+          value: $(tt.params.targetNamespace)
+        - name: entandoVersion
+          value: $(tt.params.entandoVersion)
+      workspaces:
+      - name: shared-workspace
+        volumeClaimTemplate:
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 100Mi

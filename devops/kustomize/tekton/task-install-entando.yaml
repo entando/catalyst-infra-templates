@@ -1,0 +1,84 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: task-install-entando
+  labels:
+    app.kubernetes.io/version: "0.1"
+spec:
+  description: |
+    This task install an Entando instance with default values:
+      - Postgresql as data-layer running on its own dedicated pod
+      - All the Schemas are created and initialized on the same DB
+      - Default limits for CPU and Memory are also applied so you'll need 6VCPU and 6GB of Memory
+  params:
+    - name: entandoAppName
+      type: string
+      description: The name of the CR that will be created
+    - name: ingressHostName
+      type: string
+      description: The FQDN that will be used to expose Entando's endpoints
+    - name: entandoVersion
+      type: string
+      description: The Entando's namespace resources installed whithin this release
+      default: v7.2.2
+    - name: image
+      default: gcr.io/cloud-builders/kubectl@sha256:8ab94be8b2b4f3d117f02d868b39540fddd225447abf4014f7ba4765cb39f753 #image is huge
+      description: kubectl wrapper image # We need to update the default one for sure
+    - name: installEntandoClusterResources
+      default: "false"
+      description: Option to install the Entando's CRD on this cluster. The version will be the same as the one defined in the `entandoVersion` params 
+    - name: targetNamespace
+      type: string
+      description: The target namespace where the Entando will be installed
+  steps:
+    - name: install-entando
+      image: $(params.image)
+      script: |
+        #!/usr/bin/env bash
+        set -x 
+        # install Entando's CRDs if the `installEntandoClusterResources` is set to true
+        if [ "$(params.installEntandoClusterResources)" = "true" ]; then
+          kubectl apply -f "https://raw.githubusercontent.com/entando/entando-releases/$(params.entandoVersion)/dist/ge-1-1-6/namespace-scoped-deployment/cluster-resources.yaml"
+        fi
+        
+        if ! kubectl get ns "$(params.targetNamespace)" >/dev/null 2>&1; then
+          # we create the namespace
+          kubectl create ns "$(params.targetNamespace)"
+        fi
+                
+        # install namespace resources
+        kubectl -n "$(params.targetNamespace)" apply -f "https://raw.githubusercontent.com/entando/entando-releases/$(params.entandoVersion)/dist/ge-1-1-6/namespace-scoped-deployment/namespace-resources.yaml"
+        echo "Wait for 30 seconds to have the Entando operator up and running..."
+        sleep 30
+        
+        # deploy the Entando's operator configmap
+        kubectl -n "$(params.targetNamespace)" apply -f - <<EOF
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+         name: entando-operator-config
+        data:
+          entando.pod.completion.timeout.seconds: "2000"
+          entando.pod.readiness.timeout.seconds: "2000"
+          entando.requires.filesystem.group.override: "true"
+          entando.ingress.class: "nginx"
+          entando.k8s.operator.impose.limits: "true"
+        EOF
+        
+        # deploy the EntandoApp manifest to start the installation
+        kubectl -n "$(params.targetNamespace)" apply -f - <<EOF
+        apiVersion: entando.org/v1
+        kind: EntandoApp
+        metadata:
+          namespace: $(params.targetNamespace)
+          name: $(params.entandoAppName)
+        spec:
+          dbms: postgresql
+          ingressHostName: $(params.ingressHostName)
+          standardServerImage: tomcat
+          environmentVariables:
+            - name: MAX_RAM_PERCENTAGE
+              value: "75"
+          replicas: 1
+        EOF
+        

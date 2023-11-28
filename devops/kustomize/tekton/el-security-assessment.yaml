@@ -1,0 +1,46 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: el-security-assessment
+spec:
+  serviceAccountName: sa-tekton-trigger
+  triggers:
+    - name: trigger-security-assessment
+      interceptors:
+      - name: check-headers
+        ref:
+          name: cel
+          kind: ClusterInterceptor
+        params:
+          - name: filter
+            value: header.match("GitHub-Action-Event", "start_entando") && header.canonical('X-Api-Key').compareSecret('api-key', 'secret-api-key')
+      bindings:
+      - ref: tb-start-security-assessment
+      template:
+        ref: tt-start-security-assessment
+    - name: trigger-end-security-assessment
+      interceptors:
+      - name: check-headers
+        ref:
+          name: cel
+          kind: ClusterInterceptor
+        params:
+          - name: filter
+            value: header.match("GitHub-Action-Event", "shutdown_entando") && header.canonical('X-Api-Key').compareSecret('api-key', 'secret-api-key')
+      bindings:
+      - ref: tb-shutdown-security-assessment
+      template:
+        ref: tt-shutdown-security-assessment
+    - name: trigger-run-kubectl
+      interceptors:
+      - name: check-headers
+        ref:
+          name: cel
+          kind: ClusterInterceptor
+        params:
+          - name: filter
+            value: header.match("GitHub-Action-Event", "run_kubectl") && header.canonical('X-Api-Key').compareSecret('api-key', 'secret-api-key')
+      bindings:
+      - ref: tb-run-kubectl
+      template:
+        ref: tt-run-kubectl

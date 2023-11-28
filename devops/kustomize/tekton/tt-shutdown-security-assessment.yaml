@@ -1,0 +1,27 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: tt-shutdown-security-assessment
+spec:
+  params:
+    - name: targetNamespace
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1beta1
+    kind: PipelineRun
+    metadata:
+      generateName: shutdown-security-assessment-run-
+    spec:
+      pipelineRef:
+        name: pipeline-shutdown-security-assessment
+      params:
+        - name: targetNamespace
+          value: $(tt.params.targetNamespace)
+      workspaces:
+      - name: shared-workspace
+        volumeClaimTemplate:
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 100Mi
