@@ -6,12 +6,89 @@ on:
       entandoVersion:
         description: "Entando version"
         required: true
+        default: "v7.3.0"
 
 jobs:
-  echo:
+  setup:
     runs-on: ubuntu-latest
+    outputs:
+      projectId: ${{ steps.set-output.outputs.projectId }}
+      projectName: ${{ steps.set-output.outputs.projectName }}
+      randomNumber: ${{ steps.set-output.outputs.randomNumber }}
     steps:
     
-    - name: echo test
+    - name: Checking if user has a Project in Rancher
+      id: set-output
       run: |
-        echo "Testing 1"
+        echo "This workflow was triggered by ${{ github.actor }}"
+        PROJECT_NAME=test-$(echo ${{ github.actor }} | tr '[:upper:]' '[:lower:]')
+        echo "projectName=$PROJECT_NAME" >> $GITHUB_OUTPUT
+        PROJECT_ID=$(curl -k -u ${{ secrets.RANCHER_API_KEY }} ${{ secrets.RANCHER_URL }}/v1/management.cattle.io.projects | jq -r ".data[] | select(.spec.displayName == \"$PROJECT_NAME\") | \"\(.metadata.name)\"")
+        if [ -n "$PROJECT_ID" ]; then
+            echo "Project exists: $PROJECT_ID"
+            echo "projectId=$PROJECT_ID" >> $GITHUB_OUTPUT
+        else
+            echo "Project $PROJECT_NAME DOES NOT exists"
+            exit 1
+        fi
+        RANDOM_NUMBER=$(shuf -i 10000-99999 -n 1)
+        echo "randomNumber=$RANDOM_NUMBER" >> $GITHUB_OUTPUT
+
+  deploy-entando:
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - name: Checking output
+      run: |
+        echo "projectId: ${{needs.setup.outputs.projectId}}"
+        echo "projectName: ${{needs.setup.outputs.projectName}}"
+        echo "randomNumber: ${{needs.setup.outputs.randomNumber}}"
+    
+    - name: Install Entando
+      run: |
+        TARGET_NAMESPACE=${{needs.setup.outputs.projectName}}-${{needs.setup.outputs.randomNumber}}
+        echo "targetNamespace: $TARGET_NAMESPACE"
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "GitHub-Action-Event: start_entando" \
+          -H "X-Api-Key: ${{ secrets.SECURITY_ASSESSMENT_API_KEY }}" \
+          -d "{
+               \"entandoAppName\":\"$TARGET_NAMESPACE\",
+               \"ingressHostName\":\"$TARGET_NAMESPACE.k8s-entando.org\",
+               \"targetNamespace\":\"$TARGET_NAMESPACE\",
+               \"entandoVersion\":\"${{ github.event.inputs.entandoVersion }}\"
+             }" \
+          ${{ secrets.SECURITY_ASSESSMENT_WEBHOOK_URL }}
+
+    - name: Waiting for Entando instance
+      run: |
+        TARGET_NAMESPACE=${{needs.setup.outputs.projectName}}-${{needs.setup.outputs.randomNumber}}
+        while true; do
+          url="http://$TARGET_NAMESPACE.k8s-entando.org/entando-de-app/api/health"
+          response=$(curl -s -o /dev/null -w "%{http_code}" $url)
+          echo "Checking if Entando is installed. Current status code: ${response}."
+          if [ "$response" == "200" ]; then
+            echo "Entando is installed. Exiting."
+            break
+          else
+            echo "Entando is still being installing. This should take around 10 minutes. Waiting 1 minute."
+            sleep 60
+          fi
+        done
+
+    - name: Entando instance is ready
+      run: |
+        sleep 30
+        TARGET_NAMESPACE=${{needs.setup.outputs.projectName}}-${{needs.setup.outputs.randomNumber}}
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "GitHub-Action-Event: run_kubectl" \
+          -H "X-Api-Key: ${{ secrets.SECURITY_ASSESSMENT_API_KEY }}" \
+          -d "{
+               \"kubectlParameters\":\"annotate namespaces $TARGET_NAMESPACE field.cattle.io/projectId=${{ secrets.RANCHER_PROJECT_CLUSTER_ID }}:${{needs.setup.outputs.projectId}}\"
+             }" \
+          ${{ secrets.SECURITY_ASSESSMENT_WEBHOOK_URL }}
+        echo "http://$TARGET_NAMESPACE.k8s-entando.org/app-builder/ is ready to be used"
+        echo "This instance will be deleted today at midnight"
+        

@@ -1,0 +1,29 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: pipeline-start-security-assessment
+spec:
+  params:
+    - name: entandoAppName
+      type: string
+    - name: ingressHostName
+      type: string     
+    - name: targetNamespace
+      type: string     
+    - name: entandoVersion
+      type: string     
+  workspaces:
+    - name: shared-workspace
+  tasks:
+    - name: install-entando
+      params:
+        - name: entandoAppName
+          value: $(params.entandoAppName)
+        - name: ingressHostName
+          value: $(params.ingressHostName)
+        - name: targetNamespace
+          value: $(params.targetNamespace)
+        - name: entandoVersion
+          value: $(params.entandoVersion)
+      taskRef:
+        name: task-install-entando

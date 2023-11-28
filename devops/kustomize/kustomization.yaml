@@ -1,0 +1,21 @@
+namespace: security-assessment
+resources:
+- namespace.yaml
+- tekton/sa-tekton-trigger.yaml
+- tekton/rb-triggers-el.yaml
+- tekton/crb-triggers-el.yaml
+- tekton/ingress-security-assessment.yaml
+- tekton/pipeline-start-security-assessment.yaml
+- tekton/pipeline-shutdown-security-assessment.yaml
+- tekton/pipeline-run-kubectl.yaml
+- tekton/task-install-entando.yaml
+- tekton/task-delete-namespace.yaml
+- tekton/task-run-kubectl.yaml
+- tekton/el-security-assessment.yaml
+- tekton/tb-start-security-assessment.yaml
+- tekton/tb-shutdown-security-assessment.yaml
+- tekton/tb-run-kubectl.yaml
+- tekton/tt-start-security-assessment.yaml
+- tekton/tt-shutdown-security-assessment.yaml
+- tekton/tt-run-kubectl.yaml
+- tekton/sealed-secret-api-key.yaml
