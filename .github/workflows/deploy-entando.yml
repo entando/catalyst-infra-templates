@@ -57,7 +57,8 @@ jobs:
                \"entandoAppName\":\"$TARGET_NAMESPACE\",
                \"ingressHostName\":\"$TARGET_NAMESPACE.k8s-entando.org\",
                \"targetNamespace\":\"$TARGET_NAMESPACE\",
-               \"entandoVersion\":\"${{ github.event.inputs.entandoVersion }}\"
+               \"entandoVersion\":\"${{ github.event.inputs.entandoVersion }}\",
+               \"tlsEnabled\":\"true\"
              }" \
           ${{ secrets.SECURITY_ASSESSMENT_WEBHOOK_URL }}
 
