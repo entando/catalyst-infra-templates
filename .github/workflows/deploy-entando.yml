@@ -67,7 +67,7 @@ jobs:
         TARGET_NAMESPACE=${{needs.setup.outputs.projectName}}-${{needs.setup.outputs.randomNumber}}
         while true; do
           url="https://$TARGET_NAMESPACE.k8s-entando.org/entando-de-app/api/health"
-          response=$(curl -s -o /dev/null -w "%{http_code}" $url)
+          response=$(curl -k -s -o /dev/null -w "%{http_code}" $url)
           echo "Checking if Entando is installed. Current status code: ${response}."
           if [ "$response" == "200" ]; then
             echo "Entando is installed. Exiting."
