@@ -1,0 +1,8 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: tb-shutdown-security-assessment
+spec: 
+  params:
+  - name: targetNamespace
+    value: $(body.targetNamespace)

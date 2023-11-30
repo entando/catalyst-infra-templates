@@ -1,0 +1,8 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: tb-run-kubectl
+spec: 
+  params:
+  - name: kubectlParameters
+    value: $(body.kubectlParameters)

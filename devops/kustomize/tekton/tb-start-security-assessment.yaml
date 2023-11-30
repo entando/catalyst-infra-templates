@@ -1,0 +1,14 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: tb-start-security-assessment
+spec: 
+  params:
+  - name: entandoAppName
+    value: $(body.entandoAppName)
+  - name: ingressHostName
+    value: $(body.ingressHostName)
+  - name: targetNamespace
+    value: $(body.targetNamespace)
+  - name: entandoVersion
+    value: $(body.entandoVersion)

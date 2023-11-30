@@ -1,0 +1,17 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: pipeline-run-kubectl
+spec:
+  params:
+    - name: kubectlParameters
+      type: string     
+  workspaces:
+    - name: shared-workspace
+  tasks:
+    - name: run-kubectl
+      params:
+        - name: kubectlParameters
+          value: $(params.kubectlParameters)
+      taskRef:
+        name: task-run-kubectl

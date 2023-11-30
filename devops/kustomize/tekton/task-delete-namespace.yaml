@@ -1,0 +1,27 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: task-delete-namespace
+  labels:
+    app.kubernetes.io/version: "0.1"
+spec:
+  description: |
+    This task deletes a namespace
+  params:
+    - name: image
+      default: gcr.io/cloud-builders/kubectl@sha256:8ab94be8b2b4f3d117f02d868b39540fddd225447abf4014f7ba4765cb39f753 #image is huge
+      description: kubectl wrapper image # We need to update the default one for sure
+    - name: targetNamespace
+      type: string
+      description: The target namespace that will be deleted
+  steps:
+    - name: delete-namespace
+      image: $(params.image)
+      script: |
+        #!/usr/bin/env bash
+        set -x 
+        
+        if kubectl get ns "$(params.targetNamespace)" >/dev/null 2>&1; then
+          # Namespace exists, delete it
+          kubectl delete ns "$(params.targetNamespace)"
+        fi       
