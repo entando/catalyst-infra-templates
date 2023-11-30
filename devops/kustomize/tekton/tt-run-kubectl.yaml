@@ -1,0 +1,27 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: tt-run-kubectl
+spec:
+  params:
+    - name: kubectlParameters
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1beta1
+    kind: PipelineRun
+    metadata:
+      generateName: run-kubectl
+    spec:
+      pipelineRef:
+        name: pipeline-run-kubectl
+      params:
+        - name: kubectlParameters
+          value: $(tt.params.kubectlParameters)
+      workspaces:
+      - name: shared-workspace
+        volumeClaimTemplate:
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 100Mi

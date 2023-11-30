@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-security-assessment
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: security-assessment.k8s-entando.org
+      http:
+        paths:
+          - path: /R3kF5pT7yL4wQ9iG6oA1vZ3cB2nH8mXK
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: el-el-security-assessment
+                port:
+                  number: 8080
