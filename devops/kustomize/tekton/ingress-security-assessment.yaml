@@ -12,6 +12,6 @@ spec:
             pathType: ImplementationSpecific
             backend:
               service:
-                name: el-el-security-assessment
+                name: el-event-listener
                 port:
                   number: 8080

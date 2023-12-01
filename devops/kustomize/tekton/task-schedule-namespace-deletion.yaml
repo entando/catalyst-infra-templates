@@ -1,0 +1,49 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: task-run-kubectl
+  labels:
+    app.kubernetes.io/version: "0.1"
+spec:
+  description: |
+    This task is used to schedule the delation of a namespace
+  params:
+    - name: targetNamespace 
+      type: string
+      description: The namespace that will be scheduled to be deleted
+    - name: cronExpression 
+      type: string
+      description: The cron expression that will be used to schedule the deletion
+    - name: image
+      default: gcr.io/cloud-builders/kubectl@sha256:8ab94be8b2b4f3d117f02d868b39540fddd225447abf4014f7ba4765cb39f753 #image is huge
+      description: kubectl wrapper image # We need to update the default one for sure
+  steps:
+    - name: install-entando
+      image: $(params.image)
+      script: |
+        #!/usr/bin/env bash
+        set -x 
+        # deploy the EntandoApp manifest to start the installation
+        kubectl -n "$(params.targetNamespace)" apply -f - <<EOF
+        apiVersion: batch/v1
+        kind: CronJob
+        metadata:
+          name: delete-namespace
+        spec:
+          schedule: "$(params.cronExpression)"
+          jobTemplate:
+            spec:
+              template:
+                spec:
+                  serviceAccountName: sa-tekton-trigger
+                  containers:
+                  - name: delete-namespace
+                    image: $(params.image)
+                    command:
+                    - kubectl
+                    args:
+                    - delete
+                    - namespace
+                    - $(params.targetNamespace)
+                  restartPolicy: Never
+        EOF

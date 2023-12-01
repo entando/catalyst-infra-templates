@@ -1,0 +1,10 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: tb-schedule-namespace-deletion
+spec: 
+  params:
+  - name: targetNamespace
+    value: $(body.targetNamespace)
+  - name: cronExpression
+    value: $(body.cronExpression)

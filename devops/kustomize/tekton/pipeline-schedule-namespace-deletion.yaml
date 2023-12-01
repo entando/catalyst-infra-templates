@@ -1,0 +1,21 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: pipeline-schedule-namespace-deletion
+spec:
+  params:
+    - name: targetNamespace
+      type: string
+    - name: cronExpression
+      type: string
+  workspaces:
+    - name: shared-workspace
+  tasks:
+    - name: run-schedule-namespace-deletion
+      params:
+        - name: targetNamespace
+          value: $(params.targetNamespace)
+        - name: cronExpression
+          value: $(params.cronExpression)
+      taskRef:
+        name: task-schedule-namespace-deletion
