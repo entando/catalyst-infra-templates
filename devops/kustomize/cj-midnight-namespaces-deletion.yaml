@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: midnight-namespaces-deletion
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: sa-tekton-trigger
+          containers:
+          - name: delete-namespace
+            image: gcr.io/cloud-builders/kubectl@sha256:8ab94be8b2b4f3d117f02d868b39540fddd225447abf4014f7ba4765cb39f753
+            command:
+            - kubectl
+            args:
+            - delete
+            - namespace
+            - -l
+            - delete=true
+          restartPolicy: Never
