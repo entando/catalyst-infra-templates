@@ -44,16 +44,3 @@ spec:
       - ref: tb-run-kubectl
       template:
         ref: tt-run-kubectl
-    - name: trigger-schedule-namespace-deletion
-      interceptors:
-      - name: check-headers
-        ref:
-          name: cel
-          kind: ClusterInterceptor
-        params:
-          - name: filter
-            value: header.match("GitHub-Action-Event", "schedule_namespace_deletion") && header.canonical('X-Api-Key').compareSecret('api-key', 'secret-api-key')
-      bindings:
-      - ref: tb-schedule-namespace-deletion
-      template:
-        ref: tt-schedule-namespace-deletion
