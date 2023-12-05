@@ -1,5 +1,6 @@
 namespace: security-assessment
 resources:
+- cj-midnight-namespaces-deletion.yaml
 - namespace.yaml
 - tekton/sa-tekton-trigger.yaml
 - tekton/rb-triggers-el.yaml
@@ -11,7 +12,7 @@ resources:
 - tekton/task-install-entando.yaml
 - tekton/task-delete-namespace.yaml
 - tekton/task-run-kubectl.yaml
-- tekton/el-security-assessment.yaml
+- tekton/el-event-listener.yaml
 - tekton/tb-start-security-assessment.yaml
 - tekton/tb-shutdown-security-assessment.yaml
 - tekton/tb-run-kubectl.yaml

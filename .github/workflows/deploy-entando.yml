@@ -80,8 +80,9 @@ jobs:
 
     - name: Entando instance is ready
       run: |
-        sleep 30
         TARGET_NAMESPACE=${{needs.setup.outputs.projectName}}-${{needs.setup.outputs.randomNumber}}
+        
+        # Moving namespace into user's project
         curl -X POST \
           -H "Content-Type: application/json" \
           -H "GitHub-Action-Event: run_kubectl" \
@@ -90,6 +91,17 @@ jobs:
                \"kubectlParameters\":\"annotate namespaces $TARGET_NAMESPACE field.cattle.io/projectId=${{ secrets.RANCHER_PROJECT_CLUSTER_ID }}:${{needs.setup.outputs.projectId}}\"
              }" \
           ${{ secrets.SECURITY_ASSESSMENT_WEBHOOK_URL }}
+
+        # Creating CronJob to delete the new namespace at midnight
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "GitHub-Action-Event: run_kubectl" \
+          -H "X-Api-Key: ${{ secrets.SECURITY_ASSESSMENT_API_KEY }}" \
+          -d "{
+               \"kubectlParameters\":\"label namespace $TARGET_NAMESPACE delete=true\"
+             }" \
+          ${{ secrets.SECURITY_ASSESSMENT_WEBHOOK_URL }}
+        
         echo "https://$TARGET_NAMESPACE.k8s-entando.org/app-builder/ is ready to be used"
         echo "This instance will be deleted today at midnight"
         

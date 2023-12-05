@@ -11,7 +11,9 @@ spec:
     - name: targetNamespace
       type: string     
     - name: entandoVersion
-      type: string     
+      type: string
+    - name: tlsEnabled
+      type: string
   workspaces:
     - name: shared-workspace
   tasks:
@@ -25,5 +27,7 @@ spec:
           value: $(params.targetNamespace)
         - name: entandoVersion
           value: $(params.entandoVersion)
+        - name: tlsEnabled
+          value: $(params.tlsEnabled)
       taskRef:
         name: task-install-entando

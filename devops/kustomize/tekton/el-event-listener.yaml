@@ -1,7 +1,7 @@
 apiVersion: triggers.tekton.dev/v1beta1
 kind: EventListener
 metadata:
-  name: el-security-assessment
+  name: event-listener
 spec:
   serviceAccountName: sa-tekton-trigger
   triggers:

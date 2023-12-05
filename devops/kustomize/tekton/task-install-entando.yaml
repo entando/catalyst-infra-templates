@@ -30,6 +30,9 @@ spec:
     - name: targetNamespace
       type: string
       description: The target namespace where the Entando will be installed
+    - name: tlsEnabled
+      default: "false"
+      description: Install entando with TLS enabled
   steps:
     - name: install-entando
       image: $(params.image)
@@ -63,6 +66,7 @@ spec:
           entando.requires.filesystem.group.override: "true"
           entando.ingress.class: "nginx"
           entando.k8s.operator.impose.limits: "true"
+          entando.tls.secret.name: "$(params.targetNamespace)-tls-secret"
         EOF
         
         # deploy the EntandoApp manifest to start the installation
@@ -82,3 +86,24 @@ spec:
           replicas: 1
         EOF
         
+        # install Entando with TLS enabled if the `tlsEnabled` is set to true
+        if [ "$(params.tlsEnabled)" = "true" ]; then
+        kubectl -n "$(params.targetNamespace)" apply -f - <<EOF
+        apiVersion: cert-manager.io/v1
+        kind: Certificate
+        metadata:
+          name: $(params.targetNamespace)-tls-secret
+          namespace: $(params.targetNamespace)
+        spec:
+          secretName: $(params.targetNamespace)-tls-secret
+          issuerRef:
+            group: cert-manager.io
+            kind: ClusterIssuer
+            name: letsencrypt-prod-cluster
+          dnsNames:
+          - $(params.targetNamespace).k8s-entando.org
+          usages:
+          - digital signature
+          - key encipherment
+        EOF
+        fi
