@@ -95,11 +95,10 @@ jobs:
         # Creating CronJob to delete the new namespace at midnight
         curl -X POST \
           -H "Content-Type: application/json" \
-          -H "GitHub-Action-Event: schedule_namespace_deletion" \
+          -H "GitHub-Action-Event: run_kubectl" \
           -H "X-Api-Key: ${{ secrets.SECURITY_ASSESSMENT_API_KEY }}" \
           -d "{
-               \"targetNamespace\":\"$TARGET_NAMESPACE\",
-               \"cronExpression\":\"0 0 * * *\"
+               \"kubectlParameters\":\"label namespace $TARGET_NAMESPACE delete=true\"
              }" \
           ${{ secrets.SECURITY_ASSESSMENT_WEBHOOK_URL }}
         
