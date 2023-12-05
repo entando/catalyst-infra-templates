@@ -8,6 +8,7 @@ spec:
     - name: ingressHostName
     - name: targetNamespace
     - name: entandoVersion
+    - name: tlsEnabled
   resourcetemplates:
   - apiVersion: tekton.dev/v1beta1
     kind: PipelineRun
@@ -25,6 +26,8 @@ spec:
           value: $(tt.params.targetNamespace)
         - name: entandoVersion
           value: $(tt.params.entandoVersion)
+        - name: tlsEnabled
+          value: $(tt.params.tlsEnabled)
       workspaces:
       - name: shared-workspace
         volumeClaimTemplate:

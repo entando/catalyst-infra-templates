@@ -12,3 +12,5 @@ spec:
     value: $(body.targetNamespace)
   - name: entandoVersion
     value: $(body.entandoVersion)
+  - name: tlsEnabled
+    value: $(body.tlsEnabled)
