@@ -47,7 +47,7 @@ jobs:
                "entandoAppName":" ${{ matrix.targetNamespace }}",
                "ingressHostName":"${{ matrix.targetNamespace }}.k8s-entando.org",
                "targetNamespace":"${{ matrix.targetNamespace }}",
-               "entandoVersion":"${{ github.event.inputs.entandoVersion }}",
+               "entandoVersion":"${{ matrix.entandoVersion }}",
                "tlsEnabled":"false"
              }' \
           ${{ secrets.SECURITY_ASSESSMENT_WEBHOOK_URL }}
