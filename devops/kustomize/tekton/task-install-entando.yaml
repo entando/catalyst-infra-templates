@@ -55,6 +55,7 @@ spec:
         sleep 30
         
         # deploy the Entando's operator configmap
+        if [ "$(params.tlsEnabled)" = "true" ]; then
         kubectl -n "$(params.targetNamespace)" apply -f - <<EOF
         apiVersion: v1
         kind: ConfigMap
@@ -68,6 +69,22 @@ spec:
           entando.k8s.operator.impose.limits: "true"
           entando.tls.secret.name: "$(params.targetNamespace)-tls-secret"
         EOF
+        fi
+        
+        if [ "$(params.tlsEnabled)" != "true" ]; then
+        kubectl -n "$(params.targetNamespace)" apply -f - <<EOF
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+         name: entando-operator-config
+        data:
+          entando.pod.completion.timeout.seconds: "2000"
+          entando.pod.readiness.timeout.seconds: "2000"
+          entando.requires.filesystem.group.override: "true"
+          entando.ingress.class: "nginx"
+          entando.k8s.operator.impose.limits: "true"
+        EOF
+        fi
         
         # deploy the EntandoApp manifest to start the installation
         kubectl -n "$(params.targetNamespace)" apply -f - <<EOF

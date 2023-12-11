@@ -3,7 +3,7 @@ name: Security Assessment
 on:
   schedule:
     - cron: "0 0 * * *"
-
+  
 env:
   CATALYST_INFRA_TEMPLATES_REPO: entando/catalyst-infra-templates
   SECURITY_ASSESSMENT_MATRIX_CONFIG_URL: global-config/security-assessment-matrix.json
@@ -46,7 +46,8 @@ jobs:
                "entandoAppName":" ${{ matrix.targetNamespace }}",
                "ingressHostName":"${{ matrix.targetNamespace }}.k8s-entando.org",
                "targetNamespace":"${{ matrix.targetNamespace }}",
-               "entandoVersion":"${{ matrix.entandoVersion }}"
+               "entandoVersion":"${{ matrix.entandoVersion }}",
+               "tlsEnabled":"false"
              }' \
           ${{ secrets.SECURITY_ASSESSMENT_WEBHOOK_URL }}
 
