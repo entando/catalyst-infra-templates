@@ -1,11 +1,9 @@
 name: Snyk vulnerability scan report
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: "0 0/8 * * *"
-
-#on:
-#  workflow_dispatch:    
 
 env:
   APP_ENGINE_REPO: entando/app-engine
